@@ -10,10 +10,16 @@ import (
 	"github.com/annop07/internship-alert-bot/pkg/notifier"
 	"github.com/annop07/internship-alert-bot/pkg/scraper"
 	"github.com/annop07/internship-alert-bot/pkg/storage"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	printBanner()
+
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("⚠️  Warning: .env file not found, using system environment variables")
+	}
 
 	// Get Discord webhook URL from environment variable
 	discordWebhook := os.Getenv("DISCORD_WEBHOOK_URL")
@@ -24,15 +30,38 @@ func main() {
 	// Initialize Discord notifier
 	discord := notifier.NewDiscordNotifier(discordWebhook)
 
+	// Initialize LINE Bot notifier (Optional)
+	lineChannelSecret := os.Getenv("LINE_CHANNEL_SECRET")
+	lineChannelToken := os.Getenv("LINE_CHANNEL_TOKEN")
+	lineUserID := os.Getenv("LINE_USER_ID")
+
+	var lineBot *notifier.LineBotNotifier
+	if lineChannelSecret != "" && lineChannelToken != "" && lineUserID != "" {
+		var err error
+		lineBot, err = notifier.NewLineBotNotifier(lineChannelSecret, lineChannelToken, lineUserID)
+		if err != nil {
+			log.Printf("⚠️ Failed to initialize LINE Bot: %v", err)
+		}
+	} else {
+		log.Println("⚠️ LINE credentials missing. Skipping LINE notifications.")
+	}
+
 	// Test Discord connection
-	log.Println("\n📱 Step 1: Testing Discord webhook...")
+	log.Println("\n📱 Step 1: Testing notifications...")
 	if err := discord.TestConnection(); err != nil {
 		log.Fatalf("❌ Discord connection failed: %v", err)
 	}
 
+	if lineBot != nil {
+		if err := lineBot.TestConnection(); err != nil {
+			log.Printf("❌ LINE connection failed: %v", err)
+			lineBot = nil // Disable LINE if connection fails
+		}
+	}
+
 	// Initialize storage
 	store := storage.NewStorage("data/jobs.json")
-	
+
 	// Load existing jobs from storage
 	log.Println("\n💾 Step 2: Loading storage...")
 	if err := store.Load(); err != nil {
@@ -59,7 +88,7 @@ func main() {
 	// Compare with storage to find new jobs
 	log.Println("\n🔍 Step 5: Comparing with storage...")
 	newJobs := store.GetNewJobs(scrapedJobs)
-	
+
 	log.Println("\n" + strings.Repeat("=", 70))
 	log.Printf("📊 RESULTS\n")
 	log.Println(strings.Repeat("=", 70))
@@ -71,7 +100,7 @@ func main() {
 	// Display results and send notifications
 	if len(newJobs) == 0 {
 		log.Println("\n✅ No new jobs found. All jobs are already tracked.")
-		
+
 		// Send summary to Discord
 		log.Println("\n📱 Sending summary to Discord...")
 		if err := discord.SendSummary(store.GetJobCount(), 0); err != nil {
@@ -79,42 +108,61 @@ func main() {
 		} else {
 			log.Println("✅ Summary sent to Discord!")
 		}
+
+		// Send summary to LINE
+		if lineBot != nil {
+			log.Println("📱 Sending summary to LINE...")
+			if err := lineBot.SendSummary(store.GetJobCount(), 0); err != nil {
+				log.Printf("⚠️  Failed to send LINE summary: %v", err)
+			} else {
+				log.Println("✅ Summary sent to LINE!")
+			}
+		}
 	} else {
 		log.Printf("\n🎉 Found %d NEW job(s)!\n", len(newJobs))
 		log.Println(strings.Repeat("=", 70))
-		
+
 		// Print new jobs in terminal
 		for i, job := range newJobs {
 			printJob(i+1, job)
 		}
-		
+
 		// Send notifications to Discord
-		log.Println("\n📱 Step 6: Sending Discord notifications...")
+		log.Println("\n📱 Step 6: Sending notifications...")
 		if err := discord.SendMultipleJobsAlert(newJobs); err != nil {
 			log.Printf("⚠️  Failed to send Discord notifications: %v", err)
 		} else {
 			log.Printf("✅ Successfully sent %d notification(s) to Discord!\n", len(newJobs))
 		}
-		
+
+		// Send notifications to LINE
+		if lineBot != nil {
+			if err := lineBot.SendMultipleJobsAlert(newJobs); err != nil {
+				log.Printf("⚠️  Failed to send LINE notifications: %v", err)
+			} else {
+				log.Printf("✅ Successfully sent %d notification(s) to LINE!\n", len(newJobs))
+			}
+		}
+
 		// Add new jobs to storage
 		log.Println("\n💾 Step 7: Updating storage...")
 		store.AddJobs(newJobs)
-		
+
 		if err := store.Save(); err != nil {
 			log.Fatalf("❌ Failed to save storage: %v", err)
 		}
-		
+
 		log.Printf("✅ Successfully added %d new job(s) to storage\n", len(newJobs))
 		log.Printf("📊 Now tracking: %d total jobs\n", store.GetJobCount())
 	}
 
 	// Print summary
 	printStorageSummary(store)
-	
+
 	log.Println("\n" + strings.Repeat("=", 70))
 	log.Println("✅ Phase 3 Complete!")
-	log.Println("🎯 Bot will now send Discord notifications for new jobs!")
-	log.Println("💡 Check your Discord channel for alerts.")
+	log.Println("🎯 Bot will now send notifications for new jobs!")
+	log.Println("💡 Check your Discord/LINE for alerts.")
 	log.Println(strings.Repeat("=", 70))
 }
 
@@ -140,11 +188,11 @@ func printJob(index int, job interface{}) {
 		PostedDate  string `json:"posted_date"`
 		Description string `json:"description,omitempty"`
 	}
-	
+
 	jobData, _ := json.Marshal(job)
 	var jobInfo JobInfo
 	json.Unmarshal(jobData, &jobInfo)
-	
+
 	fmt.Printf("\n🆕 NEW Job #%d\n", index)
 	fmt.Println(strings.Repeat("-", 70))
 	fmt.Printf("   🏷️  ID:       %s\n", jobInfo.ID)
@@ -152,7 +200,7 @@ func printJob(index int, job interface{}) {
 	fmt.Printf("   🏢 Company:  %s\n", jobInfo.Company)
 	fmt.Printf("   📍 Location: %s\n", jobInfo.Location)
 	fmt.Printf("   📅 Posted:   %s\n", jobInfo.PostedDate)
-	
+
 	if jobInfo.Description != "" {
 		desc := jobInfo.Description
 		if len(desc) > 100 {
@@ -160,21 +208,21 @@ func printJob(index int, job interface{}) {
 		}
 		fmt.Printf("   📝 Preview:  %s\n", desc)
 	}
-	
+
 	fmt.Printf("   🔗 URL:      %s\n", jobInfo.URL)
 }
 
 func printStorageSummary(store *storage.Storage) {
 	stats := store.GetStats()
-	
+
 	fmt.Println("\n" + strings.Repeat("=", 70))
 	fmt.Println("📈 STORAGE SUMMARY")
 	fmt.Println(strings.Repeat("=", 70))
-	
+
 	fmt.Printf("Total Jobs Tracked:    %d\n", stats["total_jobs"])
 	fmt.Printf("Unique Companies:      %d\n", stats["unique_companies"])
 	fmt.Printf("Unique Locations:      %d\n", stats["unique_locations"])
-	
+
 	// Show top companies
 	if companies, ok := stats["companies"].(map[string]int); ok && len(companies) > 0 {
 		fmt.Println("\n🏆 Top Companies:")
@@ -187,7 +235,7 @@ func printStorageSummary(store *storage.Storage) {
 			count++
 		}
 	}
-	
+
 	// Show top locations
 	if locations, ok := stats["locations"].(map[string]int); ok && len(locations) > 0 {
 		fmt.Println("\n📍 Top Locations:")
