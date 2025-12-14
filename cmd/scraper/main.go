@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
+	"github.com/annop07/internship-alert-bot/pkg/notifier"
 	"github.com/annop07/internship-alert-bot/pkg/scraper"
 	"github.com/annop07/internship-alert-bot/pkg/storage"
 )
@@ -13,11 +15,26 @@ import (
 func main() {
 	printBanner()
 
+	// Get Discord webhook URL from environment variable
+	discordWebhook := os.Getenv("DISCORD_WEBHOOK_URL")
+	if discordWebhook == "" {
+		log.Fatal("❌ DISCORD_WEBHOOK_URL environment variable is not set!")
+	}
+
+	// Initialize Discord notifier
+	discord := notifier.NewDiscordNotifier(discordWebhook)
+
+	// Test Discord connection
+	log.Println("\n📱 Step 1: Testing Discord webhook...")
+	if err := discord.TestConnection(); err != nil {
+		log.Fatalf("❌ Discord connection failed: %v", err)
+	}
+
 	// Initialize storage
 	store := storage.NewStorage("data/jobs.json")
 	
 	// Load existing jobs from storage
-	log.Println("\n💾 Step 1: Loading storage...")
+	log.Println("\n💾 Step 2: Loading storage...")
 	if err := store.Load(); err != nil {
 		log.Fatalf("❌ Failed to load storage: %v", err)
 	}
@@ -27,20 +44,20 @@ func main() {
 	s := scraper.NewScraper()
 
 	// Test connection
-	log.Println("\n📡 Step 2: Testing connection to JobsDB...")
+	log.Println("\n📡 Step 3: Testing connection to JobsDB...")
 	if err := s.TestConnection(); err != nil {
 		log.Fatalf("❌ Connection test failed: %v", err)
 	}
 
 	// Scrape jobs
-	log.Println("\n🤖 Step 3: Scraping job listings...")
+	log.Println("\n🤖 Step 4: Scraping job listings...")
 	scrapedJobs, err := s.ScrapeJobs()
 	if err != nil {
 		log.Fatalf("❌ Scraping failed: %v", err)
 	}
 
 	// Compare with storage to find new jobs
-	log.Println("\n🔍 Step 4: Comparing with storage...")
+	log.Println("\n🔍 Step 5: Comparing with storage...")
 	newJobs := store.GetNewJobs(scrapedJobs)
 	
 	log.Println("\n" + strings.Repeat("=", 70))
@@ -51,22 +68,36 @@ func main() {
 	log.Printf("   🔥 NEW jobs:       %d\n", len(newJobs))
 	log.Println(strings.Repeat("=", 70))
 
-	// Display results
+	// Display results and send notifications
 	if len(newJobs) == 0 {
 		log.Println("\n✅ No new jobs found. All jobs are already tracked.")
-		log.Println("💡 This is good! It means the system is working correctly.")
-		log.Println("   Run again later to check for new postings.")
+		
+		// Send summary to Discord
+		log.Println("\n📱 Sending summary to Discord...")
+		if err := discord.SendSummary(store.GetJobCount(), 0); err != nil {
+			log.Printf("⚠️  Failed to send Discord summary: %v", err)
+		} else {
+			log.Println("✅ Summary sent to Discord!")
+		}
 	} else {
 		log.Printf("\n🎉 Found %d NEW job(s)!\n", len(newJobs))
 		log.Println(strings.Repeat("=", 70))
 		
-		// Print only new jobs
+		// Print new jobs in terminal
 		for i, job := range newJobs {
 			printJob(i+1, job)
 		}
 		
+		// Send notifications to Discord
+		log.Println("\n📱 Step 6: Sending Discord notifications...")
+		if err := discord.SendMultipleJobsAlert(newJobs); err != nil {
+			log.Printf("⚠️  Failed to send Discord notifications: %v", err)
+		} else {
+			log.Printf("✅ Successfully sent %d notification(s) to Discord!\n", len(newJobs))
+		}
+		
 		// Add new jobs to storage
-		log.Println("\n💾 Step 5: Updating storage...")
+		log.Println("\n💾 Step 7: Updating storage...")
 		store.AddJobs(newJobs)
 		
 		if err := store.Save(); err != nil {
@@ -80,17 +111,19 @@ func main() {
 	// Print summary
 	printStorageSummary(store)
 	
-	log.Println("\n✅ Phase 2 Complete!")
-	log.Println("🎯 Next time you run, only NEW jobs will be displayed!")
-	log.Println("💡 Try running again in a few minutes to test the storage system.")
+	log.Println("\n" + strings.Repeat("=", 70))
+	log.Println("✅ Phase 3 Complete!")
+	log.Println("🎯 Bot will now send Discord notifications for new jobs!")
+	log.Println("💡 Check your Discord channel for alerts.")
+	log.Println(strings.Repeat("=", 70))
 }
 
 func printBanner() {
 	banner := `
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
-║         🤖 INTERNSHIP ALERT BOT - Phase 2               ║
-║            Now with Job Memory! 💾                       ║
+║         🤖 INTERNSHIP ALERT BOT - Phase 3               ║
+║            Now with Discord Notifications! 📱           ║
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
 `

@@ -108,6 +108,15 @@ func (s *Scraper) extractJobs(doc *goquery.Document) []*models.Job {
 
 		// Extract Posted Date
 		postedDate := strings.TrimSpace(selection.Find("span[data-automation='jobListingDate']").Text())
+		// Fix duplication issue (e.g. "30d+ ago30d+ ago")
+		if len(postedDate) > 0 && len(postedDate)%2 == 0 {
+			half := len(postedDate) / 2
+			firstHalf := postedDate[:half]
+			secondHalf := postedDate[half:]
+			if firstHalf == secondHalf {
+				postedDate = firstHalf
+			}
+		}
 
 		// Extract Description (optional)
 		description := strings.TrimSpace(selection.Find("span[data-automation='jobShortDescription']").Text())
