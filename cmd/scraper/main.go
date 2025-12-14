@@ -4,70 +4,93 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/annop07/internship-alert-bot/pkg/scraper"
+	"github.com/annop07/internship-alert-bot/pkg/storage"
 )
 
 func main() {
 	printBanner()
 
+	// Initialize storage
+	store := storage.NewStorage("data/jobs.json")
+	
+	// Load existing jobs from storage
+	log.Println("\n💾 Step 1: Loading storage...")
+	if err := store.Load(); err != nil {
+		log.Fatalf("❌ Failed to load storage: %v", err)
+	}
+	log.Printf("   Currently tracking: %d jobs\n", store.GetJobCount())
+
 	// Create scraper
 	s := scraper.NewScraper()
 
-	// Test connection first
-	log.Println("\n📡 Step 1: Testing connection to JobsDB...")
+	// Test connection
+	log.Println("\n📡 Step 2: Testing connection to JobsDB...")
 	if err := s.TestConnection(); err != nil {
 		log.Fatalf("❌ Connection test failed: %v", err)
 	}
 
 	// Scrape jobs
-	log.Println("\n🤖 Step 2: Scraping job listings...")
-	jobs, err := s.ScrapeJobs()
+	log.Println("\n🤖 Step 3: Scraping job listings...")
+	scrapedJobs, err := s.ScrapeJobs()
 	if err != nil {
 		log.Fatalf("❌ Scraping failed: %v", err)
 	}
 
-	// Print results
+	// Compare with storage to find new jobs
+	log.Println("\n🔍 Step 4: Comparing with storage...")
+	newJobs := store.GetNewJobs(scrapedJobs)
+	
 	log.Println("\n" + strings.Repeat("=", 70))
-	log.Printf("📊 RESULTS: Found %d internship positions\n", len(jobs))
+	log.Printf("📊 RESULTS\n")
+	log.Println(strings.Repeat("=", 70))
+	log.Printf("   Total jobs found:  %d\n", len(scrapedJobs))
+	log.Printf("   Already tracked:   %d\n", store.GetJobCount())
+	log.Printf("   🔥 NEW jobs:       %d\n", len(newJobs))
 	log.Println(strings.Repeat("=", 70))
 
-	if len(jobs) == 0 {
-		log.Println("⚠️  No jobs found.")
-		log.Println("💡 This could mean:")
-		log.Println("   - No internships are currently posted")
-		log.Println("   - JobsDB changed their HTML structure")
-		log.Println("   - The website is blocking our scraper")
-		return
-	}
-
-	// Print jobs in a nice format
-	for i, job := range jobs {
-		printJob(i+1, job)
-	}
-
-	// Save to JSON file for inspection
-	if err := saveToJSON(jobs, "jobs_output.json"); err != nil {
-		log.Printf("⚠️  Could not save JSON file: %v", err)
+	// Display results
+	if len(newJobs) == 0 {
+		log.Println("\n✅ No new jobs found. All jobs are already tracked.")
+		log.Println("💡 This is good! It means the system is working correctly.")
+		log.Println("   Run again later to check for new postings.")
 	} else {
-		log.Println("\n💾 Jobs saved to jobs_output.json")
+		log.Printf("\n🎉 Found %d NEW job(s)!\n", len(newJobs))
+		log.Println(strings.Repeat("=", 70))
+		
+		// Print only new jobs
+		for i, job := range newJobs {
+			printJob(i+1, job)
+		}
+		
+		// Add new jobs to storage
+		log.Println("\n💾 Step 5: Updating storage...")
+		store.AddJobs(newJobs)
+		
+		if err := store.Save(); err != nil {
+			log.Fatalf("❌ Failed to save storage: %v", err)
+		}
+		
+		log.Printf("✅ Successfully added %d new job(s) to storage\n", len(newJobs))
+		log.Printf("📊 Now tracking: %d total jobs\n", store.GetJobCount())
 	}
 
 	// Print summary
-	printSummary(jobs)
-
-	log.Println("\n✅ Phase 1 Complete!")
-	log.Println("🎯 Next: Move to Phase 2 - Add storage to track new jobs")
+	printStorageSummary(store)
+	
+	log.Println("\n✅ Phase 2 Complete!")
+	log.Println("🎯 Next time you run, only NEW jobs will be displayed!")
+	log.Println("💡 Try running again in a few minutes to test the storage system.")
 }
 
 func printBanner() {
 	banner := `
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
-║         🤖 INTERNSHIP ALERT BOT - Phase 1               ║
-║            JobsDB Scraper Demo                          ║
+║         🤖 INTERNSHIP ALERT BOT - Phase 2               ║
+║            Now with Job Memory! 💾                       ║
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
 `
@@ -75,7 +98,6 @@ func printBanner() {
 }
 
 func printJob(index int, job interface{}) {
-	// Type assertion to access job fields
 	type JobInfo struct {
 		ID          string `json:"id"`
 		Title       string `json:"title"`
@@ -85,19 +107,19 @@ func printJob(index int, job interface{}) {
 		PostedDate  string `json:"posted_date"`
 		Description string `json:"description,omitempty"`
 	}
-
+	
 	jobData, _ := json.Marshal(job)
 	var jobInfo JobInfo
 	json.Unmarshal(jobData, &jobInfo)
-
-	fmt.Printf("\n📌 Job #%d\n", index)
+	
+	fmt.Printf("\n🆕 NEW Job #%d\n", index)
 	fmt.Println(strings.Repeat("-", 70))
 	fmt.Printf("   🏷️  ID:       %s\n", jobInfo.ID)
 	fmt.Printf("   💼 Title:    %s\n", jobInfo.Title)
 	fmt.Printf("   🏢 Company:  %s\n", jobInfo.Company)
 	fmt.Printf("   📍 Location: %s\n", jobInfo.Location)
 	fmt.Printf("   📅 Posted:   %s\n", jobInfo.PostedDate)
-
+	
 	if jobInfo.Description != "" {
 		desc := jobInfo.Description
 		if len(desc) > 100 {
@@ -105,32 +127,23 @@ func printJob(index int, job interface{}) {
 		}
 		fmt.Printf("   📝 Preview:  %s\n", desc)
 	}
-
+	
 	fmt.Printf("   🔗 URL:      %s\n", jobInfo.URL)
 }
 
-func printSummary(jobs interface{}) {
+func printStorageSummary(store *storage.Storage) {
+	stats := store.GetStats()
+	
 	fmt.Println("\n" + strings.Repeat("=", 70))
-	fmt.Println("📈 SUMMARY")
+	fmt.Println("📈 STORAGE SUMMARY")
 	fmt.Println(strings.Repeat("=", 70))
-
-	// Count jobs by company
-	companies := make(map[string]int)
-
-	jobData, _ := json.Marshal(jobs)
-	var jobList []struct {
-		Company string `json:"company"`
-	}
-	json.Unmarshal(jobData, &jobList)
-
-	for _, job := range jobList {
-		companies[job.Company]++
-	}
-
-	fmt.Printf("Total Jobs:        %d\n", len(jobList))
-	fmt.Printf("Unique Companies:  %d\n", len(companies))
-
-	if len(companies) > 0 {
+	
+	fmt.Printf("Total Jobs Tracked:    %d\n", stats["total_jobs"])
+	fmt.Printf("Unique Companies:      %d\n", stats["unique_companies"])
+	fmt.Printf("Unique Locations:      %d\n", stats["unique_locations"])
+	
+	// Show top companies
+	if companies, ok := stats["companies"].(map[string]int); ok && len(companies) > 0 {
 		fmt.Println("\n🏆 Top Companies:")
 		count := 0
 		for company, num := range companies {
@@ -141,6 +154,19 @@ func printSummary(jobs interface{}) {
 			count++
 		}
 	}
+	
+	// Show top locations
+	if locations, ok := stats["locations"].(map[string]int); ok && len(locations) > 0 {
+		fmt.Println("\n📍 Top Locations:")
+		count := 0
+		for location, num := range locations {
+			if count >= 5 {
+				break
+			}
+			fmt.Printf("   • %s (%d position%s)\n", location, num, pluralize(num))
+			count++
+		}
+	}
 }
 
 func pluralize(count int) string {
@@ -148,17 +174,4 @@ func pluralize(count int) string {
 		return "s"
 	}
 	return ""
-}
-
-func saveToJSON(data interface{}, filename string) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-
-	return encoder.Encode(data)
 }
