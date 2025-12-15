@@ -1,0 +1,6 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "go build -o webhook cmd/webhook/main.go"
+
+[deploy]
+startCommand = "./webhook"
