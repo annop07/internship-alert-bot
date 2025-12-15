@@ -2,34 +2,143 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
+	"github.com/annop07/internship-alert-bot/pkg/logger"
 	"github.com/annop07/internship-alert-bot/pkg/notifier"
 	"github.com/annop07/internship-alert-bot/pkg/scraper"
 	"github.com/annop07/internship-alert-bot/pkg/storage"
 	"github.com/joho/godotenv"
+	"github.com/robfig/cron/v3"
 )
 
+var scheduled bool
+
+// Job categories to scrape
+var categories = []string{"backend", "frontend", "fullstack"}
+
+// Category emojis for LINE
+var categoryEmojis = map[string]string{
+	"backend":   "🔵",
+	"frontend":  "🟢",
+	"fullstack": "🟡",
+}
+
 func main() {
+	// Parse command-line flags
+	flag.BoolVar(&scheduled, "scheduled", false, "Run in scheduled mode (every 15 minutes)")
+	flag.Parse()
+
 	printBanner()
+
+	// Initialize logger
+	if err := logger.Init(); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Close()
 
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️  Warning: .env file not found, using system environment variables")
+		logger.Warn(".env file not found, using system environment variables")
 	}
 
-	// Get Discord webhook URL from environment variable
+	if scheduled {
+		runScheduler()
+	} else {
+		runScraperWithRecovery()
+	}
+}
+
+func runScheduler() {
+	logger.Info("")
+	logger.Info("⏰ Starting scheduler mode...")
+	logger.Info("📅 Bot will run every 15 minutes")
+	logger.Info("🛑 Press Ctrl+C to stop")
+	logger.Info("")
+
+	// Create cron scheduler
+	c := cron.New()
+
+	// Schedule: every 15 minutes
+	_, err := c.AddFunc("*/15 * * * *", func() {
+		logger.LogScheduledRun()
+		runScraperWithRecovery()
+	})
+
+	if err != nil {
+		logger.Fatal("Failed to setup scheduler: %v", err)
+	}
+
+	// Start the scheduler
+	c.Start()
+
+	// Run immediately on startup
+	logger.Info("🚀 Running initial scan...")
+	runScraperWithRecovery()
+
+	// Setup graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for shutdown signal
+	<-sigChan
+
+	logger.Info("")
+	logger.Info("")
+	logger.Info("🛑 Shutdown signal received...")
+	logger.Info("⏳ Stopping scheduler...")
+
+	// Stop the scheduler
+	ctx := c.Stop()
+	<-ctx.Done()
+
+	logger.Success("Scheduler stopped gracefully")
+	logger.Info("👋 Goodbye!")
+}
+
+// runScraperWithRecovery wraps runScraper with panic recovery
+func runScraperWithRecovery() {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("💥 PANIC RECOVERED: %v", r)
+
+			// Try to send error notification
+			if err := sendErrorNotification(fmt.Sprintf("Bot panicked: %v", r)); err != nil {
+				logger.Error("Failed to send panic notification: %v", err)
+			}
+
+			// Continue running if in scheduler mode
+			if scheduled {
+				logger.Info("Scheduler will continue with next run...")
+			}
+		}
+	}()
+
+	runScraper()
+}
+
+// sendErrorNotification sends critical error alerts
+func sendErrorNotification(errorMsg string) error {
 	discordWebhook := os.Getenv("DISCORD_WEBHOOK_URL")
 	if discordWebhook == "" {
-		log.Fatal("❌ DISCORD_WEBHOOK_URL environment variable is not set!")
+		return fmt.Errorf("no Discord webhook configured")
 	}
 
-	// Initialize Discord notifier
-	discord := notifier.NewDiscordNotifier(discordWebhook)
+	// Log the error locally
+	logger.Error("Critical error notification: %s", errorMsg)
 
+	// TODO: Implement proper error notification via Discord
+	// For now, just log it
+	return nil
+}
+
+func runScraper() {
 	// Initialize LINE Bot notifier (Optional)
 	lineChannelSecret := os.Getenv("LINE_CHANNEL_SECRET")
 	lineChannelToken := os.Getenv("LINE_CHANNEL_TOKEN")
@@ -46,123 +155,72 @@ func main() {
 		log.Println("⚠️ LINE credentials missing. Skipping LINE notifications.")
 	}
 
-	// Test Discord connection
-	log.Println("\n📱 Step 1: Testing notifications...")
-	if err := discord.TestConnection(); err != nil {
-		log.Fatalf("❌ Discord connection failed: %v", err)
-	}
-
+	// Test LINE connection if available
 	if lineBot != nil {
+		log.Println("\n📱 Testing LINE Bot connection...")
 		if err := lineBot.TestConnection(); err != nil {
 			log.Printf("❌ LINE connection failed: %v", err)
 			lineBot = nil // Disable LINE if connection fails
-		}
-	}
-
-	// Initialize storage
-	store := storage.NewStorage("data/jobs.json")
-
-	// Load existing jobs from storage
-	log.Println("\n💾 Step 2: Loading storage...")
-	if err := store.Load(); err != nil {
-		log.Fatalf("❌ Failed to load storage: %v", err)
-	}
-	log.Printf("   Currently tracking: %d jobs\n", store.GetJobCount())
-
-	// Create scraper
-	s := scraper.NewScraper()
-
-	// Test connection
-	log.Println("\n📡 Step 3: Testing connection to JobsDB...")
-	if err := s.TestConnection(); err != nil {
-		log.Fatalf("❌ Connection test failed: %v", err)
-	}
-
-	// Scrape jobs
-	log.Println("\n🤖 Step 4: Scraping job listings...")
-	scrapedJobs, err := s.ScrapeJobs()
-	if err != nil {
-		log.Fatalf("❌ Scraping failed: %v", err)
-	}
-
-	// Compare with storage to find new jobs
-	log.Println("\n🔍 Step 5: Comparing with storage...")
-	newJobs := store.GetNewJobs(scrapedJobs)
-
-	log.Println("\n" + strings.Repeat("=", 70))
-	log.Printf("📊 RESULTS\n")
-	log.Println(strings.Repeat("=", 70))
-	log.Printf("   Total jobs found:  %d\n", len(scrapedJobs))
-	log.Printf("   Already tracked:   %d\n", store.GetJobCount())
-	log.Printf("   🔥 NEW jobs:       %d\n", len(newJobs))
-	log.Println(strings.Repeat("=", 70))
-
-	// Display results and send notifications
-	if len(newJobs) == 0 {
-		log.Println("\n✅ No new jobs found. All jobs are already tracked.")
-
-		// Send summary to Discord
-		log.Println("\n📱 Sending summary to Discord...")
-		if err := discord.SendSummary(store.GetJobCount(), 0); err != nil {
-			log.Printf("⚠️  Failed to send Discord summary: %v", err)
 		} else {
-			log.Println("✅ Summary sent to Discord!")
+			log.Println("✅ LINE Bot test successful!")
+		}
+	}
+
+	// Scrape each category
+	for _, category := range categories {
+		emoji := categoryEmojis[category]
+		log.Printf("\n%s Scraping %s internships...\n", emoji, strings.Title(category))
+
+		// Create scraper for this category
+		s := scraper.NewScraper(category)
+
+		// Initialize storage for this category
+		storageFile := fmt.Sprintf("data/%s_jobs.json", category)
+		store := storage.NewStorage(storageFile)
+
+		// Load existing jobs
+		if err := store.Load(); err != nil {
+			log.Printf("⚠️  No existing storage for %s, creating new", category)
+		}
+		log.Printf("   Currently tracking: %d %s jobs", store.GetJobCount(), category)
+
+		// Scrape jobs
+		scrapedJobs, err := s.ScrapeJobs()
+		if err != nil {
+			log.Printf(" ❌ Failed to scrape %s jobs: %v", category, err)
+			continue
 		}
 
-		// Send summary to LINE
-		if lineBot != nil {
-			log.Println("📱 Sending summary to LINE...")
-			if err := lineBot.SendSummary(store.GetJobCount(), 0); err != nil {
-				log.Printf("⚠️  Failed to send LINE summary: %v", err)
-			} else {
-				log.Println("✅ Summary sent to LINE!")
-			}
-		}
-	} else {
-		log.Printf("\n🎉 Found %d NEW job(s)!\n", len(newJobs))
-		log.Println(strings.Repeat("=", 70))
+		// Find new jobs
+		newJobs := store.GetNewJobs(scrapedJobs)
 
-		// Print new jobs in terminal
-		for i, job := range newJobs {
-			printJob(i+1, job)
-		}
+		log.Printf("   Found %d total, %d new %s jobs", len(scrapedJobs), len(newJobs), category)
 
-		// Send notifications to Discord
-		log.Println("\n📱 Step 6: Sending notifications...")
-		if err := discord.SendMultipleJobsAlert(newJobs); err != nil {
-			log.Printf("⚠️  Failed to send Discord notifications: %v", err)
-		} else {
-			log.Printf("✅ Successfully sent %d notification(s) to Discord!\n", len(newJobs))
-		}
-
-		// Send notifications to LINE
-		if lineBot != nil {
+		// Send LINE notification if there are new jobs
+		if lineBot != nil && len(newJobs) > 0 {
+			log.Printf("\n📱 Sending %s notifications to LINE...", category)
 			if err := lineBot.SendMultipleJobsAlert(newJobs); err != nil {
 				log.Printf("⚠️  Failed to send LINE notifications: %v", err)
 			} else {
-				log.Printf("✅ Successfully sent %d notification(s) to LINE!\n", len(newJobs))
+				log.Printf("✅ Sent %d %s job(s) to LINE!", len(newJobs), category)
 			}
 		}
 
-		// Add new jobs to storage
-		log.Println("\n💾 Step 7: Updating storage...")
-		store.AddJobs(newJobs)
-
-		if err := store.Save(); err != nil {
-			log.Fatalf("❌ Failed to save storage: %v", err)
+		// Save new jobs
+		if len(newJobs) > 0 {
+			store.AddJobs(newJobs)
+			if err := store.Save(); err != nil {
+				log.Printf("❌ Failed to save %s storage: %v", category, err)
+			} else {
+				log.Printf("💾 Saved %d new %s jobs", len(newJobs), category)
+			}
 		}
-
-		log.Printf("✅ Successfully added %d new job(s) to storage\n", len(newJobs))
-		log.Printf("📊 Now tracking: %d total jobs\n", store.GetJobCount())
 	}
 
-	// Print summary
-	printStorageSummary(store)
-
 	log.Println("\n" + strings.Repeat("=", 70))
-	log.Println("✅ Phase 3 Complete!")
-	log.Println("🎯 Bot will now send notifications for new jobs!")
-	log.Println("💡 Check your Discord/LINE for alerts.")
+	log.Println("✅ Multi-Category Scraping Complete!")
+	log.Println("🎯 Checked: Backend, Frontend, Fullstack")
+	log.Println("💡 Check your LINE for category-specific alerts.")
 	log.Println(strings.Repeat("=", 70))
 }
 
@@ -170,8 +228,8 @@ func printBanner() {
 	banner := `
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
-║         🤖 INTERNSHIP ALERT BOT - Phase 3               ║
-║            Now with Discord Notifications! 📱           ║
+║         🤖 INTERNSHIP ALERT BOT - Multi-Category       ║
+║            Backend | Frontend | Fullstack  🔵🟢🟡        ║
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
 `
@@ -187,13 +245,15 @@ func printJob(index int, job interface{}) {
 		URL         string `json:"url"`
 		PostedDate  string `json:"posted_date"`
 		Description string `json:"description,omitempty"`
+		Category    string `json:"category"`
 	}
 
 	jobData, _ := json.Marshal(job)
 	var jobInfo JobInfo
 	json.Unmarshal(jobData, &jobInfo)
 
-	fmt.Printf("\n🆕 NEW Job #%d\n", index)
+	emoji := categoryEmojis[jobInfo.Category]
+	fmt.Printf("\n%s NEW %s Job #%d\n", emoji, strings.Title(jobInfo.Category), index)
 	fmt.Println(strings.Repeat("-", 70))
 	fmt.Printf("   🏷️  ID:       %s\n", jobInfo.ID)
 	fmt.Printf("   💼 Title:    %s\n", jobInfo.Title)

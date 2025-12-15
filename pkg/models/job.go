@@ -12,6 +12,7 @@ type Job struct {
 	PostedDate  string    `json:"posted_date"`
 	ScrapedAt   time.Time `json:"scraped_at"`
 	Description string    `json:"description,omitempty"`
+	Category    string    `json:"category"` // "backend", "frontend", "fullstack"
 }
 
 // NewJob creates a new Job instance

@@ -8,3 +8,8 @@
 - เพิ่ม feature Clean old jobs (ลบงานเก่ากว่า 30 วัน)
 - เพิ่ม filter
 - Export report
+
+# Phase 3 มาเพิ่มทีหลัง
+- เพิ่ม หาตำแหน่งงานตามUser ต้องเช่น Backend, Frontend, Fullstack
+
+
