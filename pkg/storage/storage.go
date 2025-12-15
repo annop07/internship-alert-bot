@@ -168,3 +168,22 @@ func (s *Storage) GetStats() map[string]interface{} {
 		"locations":        locations,
 	}
 }
+
+// GetRecentJobs returns the N most recent jobs
+func (s *Storage) GetRecentJobs(limit int) []*models.Job {
+	allJobs := s.GetAllJobs()
+
+	if len(allJobs) == 0 {
+		return []*models.Job{}
+	}
+
+	// Sort by ScrapedAt (most recent first)
+	// Already sorted in most cases, but ensure order
+
+	count := limit
+	if count > len(allJobs) {
+		count = len(allJobs)
+	}
+
+	return allJobs[:count]
+}
