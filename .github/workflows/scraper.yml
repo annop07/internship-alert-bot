@@ -1,0 +1,46 @@
+name: Scheduled Job Scraper
+
+on:
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Install dependencies
+        run: go mod download
+      
+      - name: Run Scraper
+        env:
+          LINE_CHANNEL_SECRET: fb032c852527e58da709e49f40fce7c0
+          LINE_CHANNEL_TOKEN: Wn0D6APrbz3P4lNub1ksquj9zEc5/IRsJGOkEwvcXSycdEEIUQM/a6Ru0UqVhmn9cZ8cdVo9GyQNNE8o89p8t7Q6Mrgfxb3wKVwqZog1ic/bOPkZzGiKZs2KjQSxXiNRoZz77RRLDtHLg/1bPNSR+wdB04t89/1O/w1cDnyilFU=
+          LINE_USER_ID: Ucac5c287b76d8f1922e3ef548a085da2
+        run: go run cmd/scraper/main.go
+      
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet data/ || echo "changes=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit and push if changes
+        if: steps.changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/
+          git commit -m "🔄 Auto-update: New jobs found [skip ci]"
+          git push
