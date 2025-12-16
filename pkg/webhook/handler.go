@@ -3,12 +3,15 @@ package webhook
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/annop07/internship-alert-bot/pkg/models"
 	"github.com/annop07/internship-alert-bot/pkg/storage"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 )
+
+const jobsPerPage = 10
 
 // Handler handles LINE webhook events
 type Handler struct {
@@ -28,16 +31,45 @@ func NewHandler(channelSecret, channelToken string) (*Handler, error) {
 // HandleEvents processes LINE webhook events
 func (h *Handler) HandleEvents(events []*linebot.Event) error {
 	for _, event := range events {
-		if event.Type == linebot.EventTypeMessage {
+		switch event.Type {
+		case linebot.EventTypeMessage:
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
 				if err := h.handleTextMessage(event.ReplyToken, message.Text, event.Source.UserID); err != nil {
 					log.Printf("Error handling text message: %v", err)
 				}
 			}
+		case linebot.EventTypePostback:
+			if err := h.handlePostback(event.ReplyToken, event.Postback.Data, event.Source.UserID); err != nil {
+				log.Printf("Error handling postback: %v", err)
+			}
 		}
 	}
 	return nil
+}
+
+// handlePostback handles pagination postback events
+func (h *Handler) handlePostback(replyToken, data, userID string) error {
+	log.Printf("Received postback: %s from user: %s", data, userID)
+
+	// Parse postback data: "category=backend&page=2"
+	parts := strings.Split(data, "&")
+	params := make(map[string]string)
+	for _, part := range parts {
+		kv := strings.Split(part, "=")
+		if len(kv) == 2 {
+			params[kv[0]] = kv[1]
+		}
+	}
+
+	category := params["category"]
+	pageStr := params["page"]
+	page, _ := strconv.Atoi(pageStr)
+	if page < 1 {
+		page = 1
+	}
+
+	return h.sendJobsPage(replyToken, category, page)
 }
 
 // handleTextMessage processes text messages from Rich Menu buttons
@@ -46,22 +78,25 @@ func (h *Handler) handleTextMessage(replyToken, text, userID string) error {
 
 	// Determine category from message text
 	var category string
-	var emoji string
 
 	switch {
 	case strings.Contains(text, "Backend"):
 		category = "backend"
-		emoji = "🔵"
 	case strings.Contains(text, "Frontend"):
 		category = "frontend"
-		emoji = "🟢"
 	case strings.Contains(text, "Fullstack"):
 		category = "fullstack"
-		emoji = "🟡"
 	default:
 		// Not a Rich Menu button, ignore
 		return nil
 	}
+
+	return h.sendJobsPage(replyToken, category, 1)
+}
+
+// sendJobsPage sends a page of jobs with pagination
+func (h *Handler) sendJobsPage(replyToken, category string, page int) error {
+	emoji := getCategoryEmoji(category)
 
 	// Load jobs from storage
 	storageFile := fmt.Sprintf("data/%s_jobs.json", category)
@@ -72,33 +107,60 @@ func (h *Handler) handleTextMessage(replyToken, text, userID string) error {
 		return h.replyError(replyToken, "ขออภัยครับ ไม่สามารถดึงข้อมูลงานได้ในขณะนี้")
 	}
 
-	// Get recent jobs
-	jobs := store.GetRecentJobs(10) // Get 10 most recent jobs
+	// Get all jobs
+	allJobs := store.GetRecentJobs(100) // Get up to 100 jobs
+	totalJobs := len(allJobs)
 
-	if len(jobs) == 0 {
+	if totalJobs == 0 {
 		message := fmt.Sprintf("%s ยังไม่มีงาน %s Internship ในขณะนี้ครับ", emoji, strings.Title(category))
 		return h.replyText(replyToken, message)
 	}
 
-	// Send jobs as Flex Messages
-	log.Printf("Sending %d %s jobs to user", len(jobs), category)
-	return h.sendJobsFlexMessage(replyToken, jobs, category, emoji)
+	// Calculate pagination
+	startIdx := (page - 1) * jobsPerPage
+	endIdx := startIdx + jobsPerPage
+	if endIdx > totalJobs {
+		endIdx = totalJobs
+	}
+	if startIdx >= totalJobs {
+		return h.replyText(replyToken, "ไม่มีงานเพิ่มเติมแล้วครับ")
+	}
+
+	jobs := allJobs[startIdx:endIdx]
+	hasMore := endIdx < totalJobs
+
+	log.Printf("Sending page %d (%d-%d of %d) %s jobs to user", page, startIdx+1, endIdx, totalJobs, category)
+
+	return h.sendJobsFlexMessage(replyToken, jobs, category, emoji, page, totalJobs, hasMore)
 }
 
-// sendJobsFlexMessage sends jobs as LINE Flex Messages
-func (h *Handler) sendJobsFlexMessage(replyToken string, jobs []*models.Job, category, emoji string) error {
+func getCategoryEmoji(category string) string {
+	switch category {
+	case "backend":
+		return "🔵"
+	case "frontend":
+		return "🟢"
+	case "fullstack":
+		return "🟡"
+	default:
+		return "📋"
+	}
+}
+
+// sendJobsFlexMessage sends jobs as LINE Flex Messages with pagination
+func (h *Handler) sendJobsFlexMessage(replyToken string, jobs []*models.Job, category, emoji string, page, totalJobs int, hasMore bool) error {
 	// Create bubbles for each job
 	var bubbles []*linebot.BubbleContainer
 
-	// Limit to 10 jobs for carousel (LINE limit)
-	count := len(jobs)
-	if count > 10 {
-		count = 10
+	for _, job := range jobs {
+		bubble := h.createJobBubble(job)
+		bubbles = append(bubbles, bubble)
 	}
 
-	for i := 0; i < count; i++ {
-		bubble := h.createJobBubble(jobs[i])
-		bubbles = append(bubbles, bubble)
+	// Add "Next Page" bubble if there are more jobs
+	if hasMore {
+		nextPageBubble := h.createNextPageBubble(category, page+1, totalJobs)
+		bubbles = append(bubbles, nextPageBubble)
 	}
 
 	// Create carousel
@@ -108,7 +170,10 @@ func (h *Handler) sendJobsFlexMessage(replyToken string, jobs []*models.Job, cat
 	}
 
 	// Create header message
-	headerText := fmt.Sprintf("%s %s Internships\nพบ %d ตำแหน่ง", emoji, strings.Title(category), len(jobs))
+	startNum := (page-1)*jobsPerPage + 1
+	endNum := startNum + len(jobs) - 1
+	headerText := fmt.Sprintf("%s %s Internships\n📄 หน้า %d | แสดง %d-%d จาก %d ตำแหน่ง",
+		emoji, strings.Title(category), page, startNum, endNum, totalJobs)
 
 	messages := []linebot.SendingMessage{
 		linebot.NewTextMessage(headerText),
@@ -120,8 +185,71 @@ func (h *Handler) sendJobsFlexMessage(replyToken string, jobs []*models.Job, cat
 		return fmt.Errorf("failed to send flex messages: %w", err)
 	}
 
-	log.Printf("✅ Sent %d job(s) to user", len(jobs))
+	log.Printf("✅ Sent page %d (%d jobs) to user", page, len(jobs))
 	return nil
+}
+
+// createNextPageBubble creates a bubble for "View More" pagination
+func (h *Handler) createNextPageBubble(category string, nextPage, totalJobs int) *linebot.BubbleContainer {
+	emoji := getCategoryEmoji(category)
+	remaining := totalJobs - (nextPage-1)*jobsPerPage
+	if remaining > jobsPerPage {
+		remaining = jobsPerPage
+	}
+
+	return &linebot.BubbleContainer{
+		Type: linebot.FlexContainerTypeBubble,
+		Size: linebot.FlexBubbleSizeTypeMega,
+		Body: &linebot.BoxComponent{
+			Type:            linebot.FlexComponentTypeBox,
+			Layout:          linebot.FlexBoxLayoutTypeVertical,
+			JustifyContent:  linebot.FlexComponentJustifyContentTypeCenter,
+			AlignItems:      linebot.FlexComponentAlignItemsTypeCenter,
+			BackgroundColor: "#f5f5f5",
+			PaddingAll:      linebot.FlexComponentPaddingTypeXxl,
+			Contents: []linebot.FlexComponent{
+				&linebot.TextComponent{
+					Type:  linebot.FlexComponentTypeText,
+					Text:  "📄",
+					Size:  linebot.FlexTextSizeType3xl,
+					Align: linebot.FlexComponentAlignTypeCenter,
+				},
+				&linebot.TextComponent{
+					Type:   linebot.FlexComponentTypeText,
+					Text:   "ดูงานเพิ่มเติม",
+					Weight: linebot.FlexTextWeightTypeBold,
+					Size:   linebot.FlexTextSizeTypeLg,
+					Align:  linebot.FlexComponentAlignTypeCenter,
+					Margin: linebot.FlexComponentMarginTypeMd,
+				},
+				&linebot.TextComponent{
+					Type:   linebot.FlexComponentTypeText,
+					Text:   fmt.Sprintf("%s ยังมีอีก %d+ ตำแหน่ง", emoji, remaining),
+					Size:   linebot.FlexTextSizeTypeSm,
+					Color:  "#666666",
+					Align:  linebot.FlexComponentAlignTypeCenter,
+					Margin: linebot.FlexComponentMarginTypeSm,
+				},
+			},
+		},
+		Footer: &linebot.BoxComponent{
+			Type:    linebot.FlexComponentTypeBox,
+			Layout:  linebot.FlexBoxLayoutTypeVertical,
+			Spacing: linebot.FlexComponentSpacingTypeSm,
+			Contents: []linebot.FlexComponent{
+				&linebot.ButtonComponent{
+					Type:   linebot.FlexComponentTypeButton,
+					Style:  linebot.FlexButtonStyleTypePrimary,
+					Color:  "#00b900",
+					Height: linebot.FlexButtonHeightTypeSm,
+					Action: &linebot.PostbackAction{
+						Label: fmt.Sprintf("ดูหน้า %d →", nextPage),
+						Data:  fmt.Sprintf("category=%s&page=%d", category, nextPage),
+					},
+				},
+			},
+		},
+	}
 }
 
 // createJobBubble creates a Flex Bubble for a job
