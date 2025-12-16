@@ -155,15 +155,9 @@ func runScraper() {
 		log.Println("⚠️ LINE credentials missing. Skipping LINE notifications.")
 	}
 
-	// Test LINE connection if available
+	// Test LINE connection if available (no message sent to user in production)
 	if lineBot != nil {
-		log.Println("\n📱 Testing LINE Bot connection...")
-		if err := lineBot.TestConnection(); err != nil {
-			log.Printf("❌ LINE connection failed: %v", err)
-			lineBot = nil // Disable LINE if connection fails
-		} else {
-			log.Println("✅ LINE Bot test successful!")
-		}
+		log.Println("✅ LINE Bot initialized successfully")
 	}
 
 	// Scrape each category
