@@ -1,5 +1,16 @@
 [
   {
+    "id": "89181793",
+    "title": "Web Development Intern (Remote)",
+    "company": "Business Web Solutions",
+    "location": "Bangkok",
+    "url": "https://th.jobsdb.com/job/89181793",
+    "posted_date": "17h ago",
+    "scraped_at": "2025-12-16T17:25:32.501249312Z",
+    "description": "We are looking for enthusiastic Website/Web Development Interns for ongoing vacancies, who are excited to build real-world experience in web...We are looking for enthusiastic Website/Web Development Interns for ongoing vacancies, who are excited to build real-world experience in web...",
+    "category": "fullstack"
+  },
+  {
     "id": "88662455",
     "title": "Internship - Software Developer",
     "company": "IT One Co., Ltd.",
@@ -33,17 +44,6 @@
     "category": "fullstack"
   },
   {
-    "id": "89000099",
-    "title": "Brand \u0026 Social Media Developer - Internship",
-    "company": "Aunyanuphap Consulting",
-    "location": "Pathum WanBangkok",
-    "url": "https://th.jobsdb.com/job/89000099",
-    "posted_date": "9d ago",
-    "scraped_at": "2025-12-16T14:23:18.138969475Z",
-    "description": "สร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consultingสร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consulting",
-    "category": "fullstack"
-  },
-  {
     "id": "88910719",
     "title": "Software Developer Intern",
     "company": "Seagate Technology (Thailand) Ltd.",
@@ -55,17 +55,6 @@
     "category": "fullstack"
   },
   {
-    "id": "88831867",
-    "title": "Software Engineer - Skooldio Tech (Junior / Senior Officer Level",
-    "company": "LEARN Corporation Public Company Limited",
-    "location": "Bangkok",
-    "url": "https://th.jobsdb.com/job/88831867",
-    "posted_date": "17d ago",
-    "scraped_at": "2025-12-15T12:25:16.8082655+07:00",
-    "description": "Join our Thai EdTech team! Build scalable Web/Mobile apps. We seek self-driven engineers to own and ship products that impact millions of learners.Join our Thai EdTech team! Build scalable Web/Mobile apps. We seek self-driven engineers to own and ship products that impact millions of learners.",
-    "category": "fullstack"
-  },
-  {
     "id": "88657025",
     "title": "Coding Workbook Development Internship (Code Genius) Allowance Included",
     "company": "LEARN Corporation Public Company Limited",
@@ -74,6 +63,28 @@
     "posted_date": "24d ago",
     "scraped_at": "2025-12-15T12:25:16.8082655+07:00",
     "description": "Create and review coding content for kids aged 3–12, ensure curriculum alignment, develop exercises, and support material testing and improvement.Create and review coding content for kids aged 3–12, ensure curriculum alignment, develop exercises, and support material testing and improvement.",
+    "category": "fullstack"
+  },
+  {
+    "id": "89000099",
+    "title": "Brand \u0026 Social Media Developer - Internship",
+    "company": "Aunyanuphap Consulting",
+    "location": "Pathum WanBangkok",
+    "url": "https://th.jobsdb.com/job/89000099",
+    "posted_date": "9d ago",
+    "scraped_at": "2025-12-16T14:23:18.138969475Z",
+    "description": "สร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consultingสร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consulting",
+    "category": "fullstack"
+  },
+  {
+    "id": "88831867",
+    "title": "Software Engineer - Skooldio Tech (Junior / Senior Officer Level",
+    "company": "LEARN Corporation Public Company Limited",
+    "location": "Bangkok",
+    "url": "https://th.jobsdb.com/job/88831867",
+    "posted_date": "17d ago",
+    "scraped_at": "2025-12-15T12:25:16.8082655+07:00",
+    "description": "Join our Thai EdTech team! Build scalable Web/Mobile apps. We seek self-driven engineers to own and ship products that impact millions of learners.Join our Thai EdTech team! Build scalable Web/Mobile apps. We seek self-driven engineers to own and ship products that impact millions of learners.",
     "category": "fullstack"
   },
   {
