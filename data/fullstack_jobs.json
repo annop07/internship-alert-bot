@@ -22,17 +22,6 @@
     "category": "fullstack"
   },
   {
-    "id": "88998497",
-    "title": "Application Development Intern (based in Bangpu, Samutprakarn)",
-    "company": "Schneider (Thailand) Limited",
-    "location": "Samut Prakan",
-    "url": "https://th.jobsdb.com/job/88998497",
-    "posted_date": "10d ago",
-    "scraped_at": "2025-12-16T14:23:18.138923729Z",
-    "description": "Opportunity to directly impact our manufacturing operations by designing, developing, and implementing innovative applications and digital tools.Opportunity to directly impact our manufacturing operations by designing, developing, and implementing innovative applications and digital tools.",
-    "category": "fullstack"
-  },
-  {
     "id": "89039449",
     "title": "Internship Software Tester (KX)",
     "company": "Kasikorn X Company Limited",
@@ -66,17 +55,6 @@
     "category": "fullstack"
   },
   {
-    "id": "89000099",
-    "title": "Brand \u0026 Social Media Developer - Internship",
-    "company": "Aunyanuphap Consulting",
-    "location": "Pathum WanBangkok",
-    "url": "https://th.jobsdb.com/job/89000099",
-    "posted_date": "9d ago",
-    "scraped_at": "2025-12-16T14:23:18.138969475Z",
-    "description": "สร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consultingสร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consulting",
-    "category": "fullstack"
-  },
-  {
     "id": "88831867",
     "title": "Software Engineer - Skooldio Tech (Junior / Senior Officer Level",
     "company": "LEARN Corporation Public Company Limited",
@@ -99,17 +77,6 @@
     "category": "fullstack"
   },
   {
-    "id": "89025899",
-    "title": "Intern - Software Engineer (AI Project)",
-    "company": "OPN",
-    "location": "Bangkok",
-    "url": "https://th.jobsdb.com/job/89025899",
-    "posted_date": "7d ago",
-    "scraped_at": "2025-12-16T14:23:18.138896899Z",
-    "description": "This internship is for a hands-on builder eager to work at the intersection of production-ready code and practical AI application. You will work...This internship is for a hands-on builder eager to work at the intersection of production-ready code and practical AI application. You will work...",
-    "category": "fullstack"
-  },
-  {
     "id": "88937734",
     "title": "aCommerce TheNextGen 2026 - Internship Program",
     "company": "aCommerce Co., Ltd.",
@@ -118,6 +85,39 @@
     "posted_date": "13d ago",
     "scraped_at": "2025-12-16T14:23:18.13898254Z",
     "description": "Our Internship Program is open to students from all backgrounds who are eager to gain hands-on experience in the dynamic and e-commerce industry.Our Internship Program is open to students from all backgrounds who are eager to gain hands-on experience in the dynamic and e-commerce industry.",
+    "category": "fullstack"
+  },
+  {
+    "id": "88998497",
+    "title": "Application Development Intern (based in Bangpu, Samutprakarn)",
+    "company": "Schneider (Thailand) Limited",
+    "location": "Samut Prakan",
+    "url": "https://th.jobsdb.com/job/88998497",
+    "posted_date": "10d ago",
+    "scraped_at": "2025-12-16T14:23:18.138923729Z",
+    "description": "Opportunity to directly impact our manufacturing operations by designing, developing, and implementing innovative applications and digital tools.Opportunity to directly impact our manufacturing operations by designing, developing, and implementing innovative applications and digital tools.",
+    "category": "fullstack"
+  },
+  {
+    "id": "89000099",
+    "title": "Brand \u0026 Social Media Developer - Internship",
+    "company": "Aunyanuphap Consulting",
+    "location": "Pathum WanBangkok",
+    "url": "https://th.jobsdb.com/job/89000099",
+    "posted_date": "9d ago",
+    "scraped_at": "2025-12-16T14:23:18.138969475Z",
+    "description": "สร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consultingสร้าง Brand สร้างองค์กร วางแผนการตลาด ทำจริงแบบครบวงจร พัฒนาตนเองให้เก่งขึ้นด้านการตลาด และเข้าใจโลกธุรกิจในเวลาเดียวกันกับ Aunyanuphap Consulting",
+    "category": "fullstack"
+  },
+  {
+    "id": "89025899",
+    "title": "Intern - Software Engineer (AI Project)",
+    "company": "OPN",
+    "location": "Bangkok",
+    "url": "https://th.jobsdb.com/job/89025899",
+    "posted_date": "7d ago",
+    "scraped_at": "2025-12-16T14:23:18.138896899Z",
+    "description": "This internship is for a hands-on builder eager to work at the intersection of production-ready code and practical AI application. You will work...This internship is for a hands-on builder eager to work at the intersection of production-ready code and practical AI application. You will work...",
     "category": "fullstack"
   },
   {
@@ -140,6 +140,17 @@
     "posted_date": "17d ago",
     "scraped_at": "2025-12-15T12:25:16.8082655+07:00",
     "description": "Seeking a passionate programmer to develop business operation software using Python/OpenGL Growth in full SDLC, leadership, and ERP experience a plus.Seeking a passionate programmer to develop business operation software using Python/OpenGL Growth in full SDLC, leadership, and ERP experience a plus.",
+    "category": "fullstack"
+  },
+  {
+    "id": "89184639",
+    "title": "Computer Engineering Intern - GenAI \u0026 Digital Workforce Platform",
+    "company": "Seagate Technology (Thailand) Ltd.",
+    "location": "Nakhon Ratchasima",
+    "url": "https://th.jobsdb.com/job/89184639",
+    "posted_date": "11h ago",
+    "scraped_at": "2025-12-16T23:18:47.507150983Z",
+    "description": "We are seeking a highly skilled Compute Engineer to join our GenAI Innovation initiative. This role is responsible for designing, developing, and...We are seeking a highly skilled Compute Engineer to join our GenAI Innovation initiative. This role is responsible for designing, developing, and...",
     "category": "fullstack"
   }
 ]
