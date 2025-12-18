@@ -52,7 +52,7 @@ The project focuses on reliability, clean architecture, and scalable bot-based u
 
 
 #### 10. Result List Jobs
-<img src="alert-bot-photo/10.result-list-jobs.png" width="250">
+<img src="alert-bot-photo/10.discord-result.png" width="250">
 
 
 
