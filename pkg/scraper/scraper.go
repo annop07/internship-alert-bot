@@ -19,14 +19,12 @@ const (
 	timeoutSeconds = 30
 )
 
-// Scraper handles job scraping from JobsDB
 type Scraper struct {
 	client   *http.Client
 	baseURL  string
 	category string
 }
 
-// NewScraper creates a new Scraper instance for a specific job category
 func NewScraper(category string) *Scraper {
 	var searchKeyword string
 	switch category {
@@ -51,7 +49,6 @@ func NewScraper(category string) *Scraper {
 	}
 }
 
-// ScrapeJobs fetches and parses job listings with retry logic
 func (s *Scraper) ScrapeJobs() ([]*models.Job, error) {
 	log.Println("🔍 Starting to scrape jobs from JobsDB...")
 
@@ -70,7 +67,6 @@ func (s *Scraper) ScrapeJobs() ([]*models.Job, error) {
 	return jobs, nil
 }
 
-// fetchHTMLWithRetry fetches HTML with exponential backoff retry
 func (s *Scraper) fetchHTMLWithRetry(url string, maxRetries int) (*goquery.Document, error) {
 	var lastErr error
 
@@ -97,7 +93,6 @@ func (s *Scraper) fetchHTMLWithRetry(url string, maxRetries int) (*goquery.Docum
 			continue
 		}
 
-		// Check status code
 		if resp.StatusCode != 200 {
 			resp.Body.Close()
 			lastErr = fmt.Errorf("unexpected status code %d (attempt %d/%d)", resp.StatusCode, attempt, maxRetries)
@@ -121,7 +116,6 @@ func (s *Scraper) fetchHTMLWithRetry(url string, maxRetries int) (*goquery.Docum
 	return nil, fmt.Errorf("all retry attempts failed: %w", lastErr)
 }
 
-// setHeaders sets browser-like headers
 func (s *Scraper) setHeaders(req *http.Request) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")

@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-// Job represents a job posting
 type Job struct {
 	ID          string    `json:"id"`
 	Title       string    `json:"title"`
@@ -12,10 +11,9 @@ type Job struct {
 	PostedDate  string    `json:"posted_date"`
 	ScrapedAt   time.Time `json:"scraped_at"`
 	Description string    `json:"description,omitempty"`
-	Category    string    `json:"category"` // "backend", "frontend", "fullstack"
+	Category    string    `json:"category"`
 }
 
-// NewJob creates a new Job instance
 func NewJob(title, company, location, url, postedDate string) *Job {
 	return &Job{
 		Title:      title,

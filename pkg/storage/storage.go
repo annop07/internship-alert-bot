@@ -23,7 +23,6 @@ func NewStorage(filePath string) *Storage {
 	}
 }
 
-// Load reads jobs from storage file
 func (s *Storage) Load() error {
 	dir := filepath.Dir(s.filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -32,7 +31,7 @@ func (s *Storage) Load() error {
 
 	if _, err := os.Stat(s.filePath); os.IsNotExist(err) {
 		log.Println("📂 No existing storage file, starting fresh")
-		return nil // Not an error - first run
+		return nil
 	}
 
 	data, err := os.ReadFile(s.filePath)
@@ -45,7 +44,6 @@ func (s *Storage) Load() error {
 		return fmt.Errorf("failed to parse storage file: %w", err)
 	}
 
-
 	s.jobs = make(map[string]*models.Job)
 	for _, job := range jobs {
 		s.jobs[job.ID] = job
@@ -56,7 +54,6 @@ func (s *Storage) Load() error {
 }
 
 func (s *Storage) Save() error {
-	// Convert map to slice
 	jobs := make([]*models.Job, 0, len(s.jobs))
 	for _, job := range s.jobs {
 		jobs = append(jobs, job)
@@ -102,7 +99,6 @@ func (s *Storage) GetNewJobs(scrapedJobs []*models.Job) []*models.Job {
 	return newJobs
 }
 
-
 func (s *Storage) GetAllJobs() []*models.Job {
 	jobs := make([]*models.Job, 0, len(s.jobs))
 	for _, job := range s.jobs {
@@ -111,11 +107,9 @@ func (s *Storage) GetAllJobs() []*models.Job {
 	return jobs
 }
 
-
 func (s *Storage) GetJobCount() int {
 	return len(s.jobs)
 }
-
 
 func (s *Storage) CleanOldJobs(days int) int {
 	cutoffTime := time.Now().AddDate(0, 0, -days)
@@ -134,7 +128,6 @@ func (s *Storage) CleanOldJobs(days int) int {
 
 	return removed
 }
-
 
 func (s *Storage) GetStats() map[string]interface{} {
 	companies := make(map[string]int)
@@ -156,14 +149,12 @@ func (s *Storage) GetStats() map[string]interface{} {
 	}
 }
 
-
 func (s *Storage) GetRecentJobs(limit int) []*models.Job {
 	allJobs := s.GetAllJobs()
 
 	if len(allJobs) == 0 {
 		return []*models.Job{}
 	}
-
 
 	count := limit
 	if count > len(allJobs) {

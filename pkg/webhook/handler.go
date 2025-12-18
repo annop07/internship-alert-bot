@@ -13,12 +13,10 @@ import (
 
 const jobsPerPage = 10
 
-// Handler handles LINE webhook events
 type Handler struct {
 	bot *linebot.Client
 }
 
-// NewHandler creates a new webhook handler
 func NewHandler(channelSecret, channelToken string) (*Handler, error) {
 	bot, err := linebot.New(channelSecret, channelToken)
 	if err != nil {
@@ -28,7 +26,6 @@ func NewHandler(channelSecret, channelToken string) (*Handler, error) {
 	return &Handler{bot: bot}, nil
 }
 
-// HandleEvents processes LINE webhook events
 func (h *Handler) HandleEvents(events []*linebot.Event) error {
 	for _, event := range events {
 		switch event.Type {
@@ -70,11 +67,9 @@ func (h *Handler) handlePostback(replyToken, data, userID string) error {
 	return h.sendJobsPage(replyToken, category, page)
 }
 
-// handleTextMessage processes text messages from Rich Menu buttons
 func (h *Handler) handleTextMessage(replyToken, text, userID string) error {
 	log.Printf("Received message: %s from user: %s", text, userID)
 
-	// Determine category from message text
 	var category string
 
 	switch {
@@ -91,11 +86,9 @@ func (h *Handler) handleTextMessage(replyToken, text, userID string) error {
 	return h.sendJobsPage(replyToken, category, 1)
 }
 
-// sendJobsPage sends a page of jobs with pagination
 func (h *Handler) sendJobsPage(replyToken, category string, page int) error {
 	emoji := getCategoryEmoji(category)
 
-	// Load jobs from storage
 	storageFile := fmt.Sprintf("data/%s_jobs.json", category)
 	store := storage.NewStorage(storageFile)
 
@@ -112,7 +105,6 @@ func (h *Handler) sendJobsPage(replyToken, category string, page int) error {
 		return h.replyText(replyToken, message)
 	}
 
-	// Calculate pagination
 	startIdx := (page - 1) * jobsPerPage
 	endIdx := startIdx + jobsPerPage
 	if endIdx > totalJobs {
@@ -121,7 +113,6 @@ func (h *Handler) sendJobsPage(replyToken, category string, page int) error {
 	if startIdx >= totalJobs {
 		return h.replyText(replyToken, "ไม่มีงานเพิ่มเติมแล้วครับ")
 	}
-
 	jobs := allJobs[startIdx:endIdx]
 	hasMore := endIdx < totalJobs
 
@@ -243,7 +234,6 @@ func (h *Handler) createNextPageBubble(category string, nextPage, totalJobs int)
 	}
 }
 
-// createJobBubble creates a Flex Bubble for a job
 func (h *Handler) createJobBubble(job *models.Job) *linebot.BubbleContainer {
 	return &linebot.BubbleContainer{
 		Type: linebot.FlexContainerTypeBubble,
@@ -343,12 +333,10 @@ func (h *Handler) createJobBubble(job *models.Job) *linebot.BubbleContainer {
 	}
 }
 
-// Helper function
 func intPtr(i int) *int {
 	return &i
 }
 
-// replyText sends a simple text reply
 func (h *Handler) replyText(replyToken, text string) error {
 	if _, err := h.bot.ReplyMessage(replyToken, linebot.NewTextMessage(text)).Do(); err != nil {
 		return fmt.Errorf("failed to reply text: %w", err)
@@ -356,7 +344,6 @@ func (h *Handler) replyText(replyToken, text string) error {
 	return nil
 }
 
-// replyError sends an error message
 func (h *Handler) replyError(replyToken, errorMsg string) error {
 	return h.replyText(replyToken, errorMsg)
 }

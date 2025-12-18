@@ -8,13 +8,11 @@ import (
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 )
 
-// LineBotNotifier handles LINE Messaging API notifications
 type LineBotNotifier struct {
 	client *linebot.Client
 	userID string
 }
 
-// NewLineBotNotifier creates a new LINE Bot notifier
 func NewLineBotNotifier(channelSecret, channelToken, userID string) (*LineBotNotifier, error) {
 	bot, err := linebot.New(channelSecret, channelToken)
 	if err != nil {
@@ -26,14 +24,12 @@ func NewLineBotNotifier(channelSecret, channelToken, userID string) (*LineBotNot
 	}, nil
 }
 
-// SendJobAlert sends a notification for a single job to ALL users
 func (l *LineBotNotifier) SendJobAlert(job *models.Job) error {
 	flexContainer := l.createJobFlexMessage(job)
 	_, err := l.client.BroadcastMessage(linebot.NewFlexMessage("New Internship Alert!", flexContainer)).Do()
 	return err
 }
 
-// SendMultipleJobsAlert sends a notification for multiple jobs using Carousel to ALL users
 func (l *LineBotNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 	if len(jobs) == 0 {
 		return nil

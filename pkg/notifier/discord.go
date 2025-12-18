@@ -11,13 +11,11 @@ import (
 	"github.com/annop07/internship-alert-bot/pkg/models"
 )
 
-// DiscordNotifier handles Discord webhook notifications
 type DiscordNotifier struct {
 	webhookURL string
 	client     *http.Client
 }
 
-// NewDiscordNotifier creates a new Discord notifier
 func NewDiscordNotifier(webhookURL string) *DiscordNotifier {
 	return &DiscordNotifier{
 		webhookURL: webhookURL,
@@ -27,7 +25,6 @@ func NewDiscordNotifier(webhookURL string) *DiscordNotifier {
 	}
 }
 
-// DiscordWebhook represents the Discord webhook payload
 type DiscordWebhook struct {
 	Username  string         `json:"username,omitempty"`
 	AvatarURL string         `json:"avatar_url,omitempty"`
@@ -35,7 +32,6 @@ type DiscordWebhook struct {
 	Embeds    []DiscordEmbed `json:"embeds,omitempty"`
 }
 
-// DiscordEmbed represents a Discord embed
 type DiscordEmbed struct {
 	Title       string              `json:"title,omitempty"`
 	Description string              `json:"description,omitempty"`
@@ -46,20 +42,17 @@ type DiscordEmbed struct {
 	Timestamp   string              `json:"timestamp,omitempty"`
 }
 
-// DiscordEmbedField represents an embed field
 type DiscordEmbedField struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
 	Inline bool   `json:"inline,omitempty"`
 }
 
-// DiscordEmbedFooter represents an embed footer
 type DiscordEmbedFooter struct {
 	Text    string `json:"text"`
 	IconURL string `json:"icon_url,omitempty"`
 }
 
-// SendJobAlert sends a notification for a single job
 func (d *DiscordNotifier) SendJobAlert(job *models.Job) error {
 	embed := d.createJobEmbed(job)
 
@@ -73,13 +66,11 @@ func (d *DiscordNotifier) SendJobAlert(job *models.Job) error {
 	return d.sendWebhook(webhook)
 }
 
-// SendMultipleJobsAlert sends a notification for multiple jobs
 func (d *DiscordNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 	if len(jobs) == 0 {
 		return nil
 	}
 
-	// Discord has a limit of 10 embeds per message
 	const maxEmbedsPerMessage = 10
 
 	for i := 0; i < len(jobs); i += maxEmbedsPerMessage {
@@ -112,7 +103,6 @@ func (d *DiscordNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 			return err
 		}
 
-		// Rate limit: wait between messages if sending multiple batches
 		if end < len(jobs) {
 			time.Sleep(1 * time.Second)
 		}
@@ -121,7 +111,6 @@ func (d *DiscordNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 	return nil
 }
 
-// SendSummary sends a summary notification
 func (d *DiscordNotifier) SendSummary(totalJobs, newJobs int) error {
 	var color int
 	var title string
@@ -156,9 +145,8 @@ func (d *DiscordNotifier) SendSummary(totalJobs, newJobs int) error {
 	return d.sendWebhook(webhook)
 }
 
-// createJobEmbed creates a Discord embed for a job
 func (d *DiscordNotifier) createJobEmbed(job *models.Job) DiscordEmbed {
-	// Format description with blockquote for better readability
+
 	description := job.Description
 	if len(description) > 300 {
 		description = description[:297] + "..."
@@ -167,13 +155,12 @@ func (d *DiscordNotifier) createJobEmbed(job *models.Job) DiscordEmbed {
 		description = "No description available"
 	}
 
-	// Add "Apply Now" link in description for visibility
 	formattedDesc := fmt.Sprintf("> %s\n\n👉 **[Click here to view details & apply](%s)**", description, job.URL)
 
 	fields := []DiscordEmbedField{
 		{
 			Name:   "🏢 Company",
-			Value:  fmt.Sprintf("**%s**", job.Company), // Bold company name
+			Value:  fmt.Sprintf("**%s**", job.Company),
 			Inline: true,
 		},
 		{
@@ -195,7 +182,7 @@ func (d *DiscordNotifier) createJobEmbed(job *models.Job) DiscordEmbed {
 		Title:       "⚡ " + job.Title,
 		Description: formattedDesc,
 		URL:         job.URL,
-		Color:       0x00b0f4, // JobsDB Blue-ish color
+		Color:       0x00b0f4,
 		Fields:      fields,
 		Footer: &DiscordEmbedFooter{
 			Text: fmt.Sprintf("Job ID: %s • %s", job.ID, time.Now().Format("15:04")),
@@ -204,7 +191,6 @@ func (d *DiscordNotifier) createJobEmbed(job *models.Job) DiscordEmbed {
 	}
 }
 
-// sendWebhook sends the webhook to Discord
 func (d *DiscordNotifier) sendWebhook(webhook DiscordWebhook) error {
 	payload, err := json.Marshal(webhook)
 	if err != nil {
@@ -224,7 +210,6 @@ func (d *DiscordNotifier) sendWebhook(webhook DiscordWebhook) error {
 	return nil
 }
 
-// TestConnection sends a test message to verify the webhook works
 func (d *DiscordNotifier) TestConnection() error {
 	log.Println("📱 Testing Discord webhook...")
 

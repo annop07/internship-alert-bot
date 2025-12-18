@@ -21,7 +21,6 @@ func main() {
 		log.Fatal("❌ LINE_CHANNEL_SECRET or LINE_CHANNEL_TOKEN not set")
 	}
 
-	// Create webhook handler
 	handler, err := webhook.NewHandler(channelSecret, channelToken)
 	if err != nil {
 		log.Fatalf("❌ Failed to create webhook handler: %v", err)
@@ -32,7 +31,6 @@ func main() {
 		log.Fatalf("❌ Failed to create LINE bot: %v", err)
 	}
 
-	// Setup HTTP handler
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		events, err := bot.ParseRequest(r)
 		if err != nil {
@@ -46,7 +44,6 @@ func main() {
 			return
 		}
 
-		// Handle events
 		if err := handler.HandleEvents(events); err != nil {
 			log.Printf("❌ Error handling events: %v", err)
 		}

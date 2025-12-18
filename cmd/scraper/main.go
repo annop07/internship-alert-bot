@@ -29,13 +29,11 @@ var categoryEmojis = map[string]string{
 }
 
 func main() {
-	// Parse command-line flags
 	flag.BoolVar(&scheduled, "scheduled", false, "Run in scheduled mode (every 15 minutes)")
 	flag.Parse()
 
 	printBanner()
 
-	// Initialize logger
 	if err := logger.Init(); err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
@@ -59,10 +57,8 @@ func runScheduler() {
 	logger.Info("🛑 Press Ctrl+C to stop")
 	logger.Info("")
 
-	// Create cron scheduler
 	c := cron.New()
 
-	// Schedule: every 15 minutes
 	_, err := c.AddFunc("*/15 * * * *", func() {
 		logger.LogScheduledRun()
 		runScraperWithRecovery()
@@ -80,7 +76,6 @@ func runScheduler() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Wait for shutdown signal
 	<-sigChan
 
 	logger.Info("")
@@ -95,7 +90,6 @@ func runScheduler() {
 	logger.Info("👋 Goodbye!")
 }
 
-// runScraperWithRecovery wraps runScraper with panic recovery
 func runScraperWithRecovery() {
 	defer func() {
 		if r := recover(); r != nil {
@@ -114,7 +108,6 @@ func runScraperWithRecovery() {
 	runScraper()
 }
 
-// sendErrorNotification sends critical error alerts
 func sendErrorNotification(errorMsg string) error {
 	discordWebhook := os.Getenv("DISCORD_WEBHOOK_URL")
 	if discordWebhook == "" {
@@ -127,7 +120,6 @@ func sendErrorNotification(errorMsg string) error {
 }
 
 func runScraper() {
-	// Initialize LINE Bot notifier (Optional)
 	lineChannelSecret := os.Getenv("LINE_CHANNEL_SECRET")
 	lineChannelToken := os.Getenv("LINE_CHANNEL_TOKEN")
 	lineUserID := os.Getenv("LINE_USER_ID")
@@ -256,7 +248,6 @@ func printStorageSummary(store *storage.Storage) {
 	fmt.Printf("Unique Companies:      %d\n", stats["unique_companies"])
 	fmt.Printf("Unique Locations:      %d\n", stats["unique_locations"])
 
-	// Show top companies
 	if companies, ok := stats["companies"].(map[string]int); ok && len(companies) > 0 {
 		fmt.Println("\n🏆 Top Companies:")
 		count := 0
@@ -269,7 +260,6 @@ func printStorageSummary(store *storage.Storage) {
 		}
 	}
 
-	// Show top locations
 	if locations, ok := stats["locations"].(map[string]int); ok && len(locations) > 0 {
 		fmt.Println("\n📍 Top Locations:")
 		count := 0

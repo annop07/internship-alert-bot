@@ -13,7 +13,7 @@ The project focuses on reliability, clean architecture, and scalable bot-based u
 
 ## Screenshots
 
-### 🤖 LINE Bot Setup
+
 
 #### 1. Bot Profile
 ![LINE Bot Profile](alert-bot-photo/1.bot.png)
@@ -24,29 +24,37 @@ The project focuses on reliability, clean architecture, and scalable bot-based u
 
 
 #### 3. First Time Setup
-![Add Bot](alert-bot-photo/3.add-bot.png)
+<img src="alert-bot-photo/3.add-bot.png" width="250">
 
-
----
-
-### 📱 Rich Menu & Navigation
 
 #### 4. Rich Menu Interface
-![Rich Menu](alert-bot-photo/4.rich-menu.png)
+<img src="alert-bot-photo/4.rich-menu.png" width="250">
 
 
 #### 5. Category Selection
-![Rich Menu Click](alert-bot-photo/5.rich-menu-click.png)
-
-
+<img src="alert-bot-photo/5.rich-menu-click.png" width="250">
 
 
 #### 6. New Job Alert (Single)
-![New Job Alert](alert-bot-photo/6.new-job-alert.png)
+<img src="alert-bot-photo/6.new-job-alert.png" width="250">
 
 
 #### 7. Multiple Job Alerts
-![Multiple Jobs Notification](alert-bot-photo/7.new-jobs-noti.png)
+<img src="alert-bot-photo/7.new-jobs-noti.png" width="250">
+
+
+#### 8. Discord Bot
+<img src="alert-bot-photo/8.discord-bot.png" width="250">
+
+
+#### 9. Bot Command
+<img src="alert-bot-photo/9.bot-command.png" width="250">
+
+
+#### 10. Result List Jobs
+<img src="alert-bot-photo/10.result-list-jobs.png" width="250">
+
+
 
 
 
