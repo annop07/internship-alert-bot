@@ -20,10 +20,8 @@ import (
 
 var scheduled bool
 
-// Job categories to scrape
 var categories = []string{"backend", "frontend", "fullstack"}
 
-// Category emojis for LINE
 var categoryEmojis = map[string]string{
 	"backend":   "🔵",
 	"frontend":  "🟢",
@@ -43,7 +41,6 @@ func main() {
 	}
 	defer logger.Close()
 
-	// Load .env file
 	if err := godotenv.Load(); err != nil {
 		logger.Warn(".env file not found, using system environment variables")
 	}
@@ -75,14 +72,11 @@ func runScheduler() {
 		logger.Fatal("Failed to setup scheduler: %v", err)
 	}
 
-	// Start the scheduler
 	c.Start()
 
-	// Run immediately on startup
 	logger.Info("🚀 Running initial scan...")
 	runScraperWithRecovery()
 
-	// Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -94,7 +88,6 @@ func runScheduler() {
 	logger.Info("🛑 Shutdown signal received...")
 	logger.Info("⏳ Stopping scheduler...")
 
-	// Stop the scheduler
 	ctx := c.Stop()
 	<-ctx.Done()
 
@@ -108,12 +101,10 @@ func runScraperWithRecovery() {
 		if r := recover(); r != nil {
 			logger.Error("💥 PANIC RECOVERED: %v", r)
 
-			// Try to send error notification
 			if err := sendErrorNotification(fmt.Sprintf("Bot panicked: %v", r)); err != nil {
 				logger.Error("Failed to send panic notification: %v", err)
 			}
 
-			// Continue running if in scheduler mode
 			if scheduled {
 				logger.Info("Scheduler will continue with next run...")
 			}
@@ -130,11 +121,8 @@ func sendErrorNotification(errorMsg string) error {
 		return fmt.Errorf("no Discord webhook configured")
 	}
 
-	// Log the error locally
 	logger.Error("Critical error notification: %s", errorMsg)
 
-	// TODO: Implement proper error notification via Discord
-	// For now, just log it
 	return nil
 }
 
@@ -155,42 +143,34 @@ func runScraper() {
 		log.Println("⚠️ LINE credentials missing. Skipping LINE notifications.")
 	}
 
-	// Test LINE connection if available (no message sent to user in production)
 	if lineBot != nil {
 		log.Println("✅ LINE Bot initialized successfully")
 	}
 
-	// Scrape each category
 	for _, category := range categories {
 		emoji := categoryEmojis[category]
 		log.Printf("\n%s Scraping %s internships...\n", emoji, strings.Title(category))
 
-		// Create scraper for this category
 		s := scraper.NewScraper(category)
 
-		// Initialize storage for this category
 		storageFile := fmt.Sprintf("data/%s_jobs.json", category)
 		store := storage.NewStorage(storageFile)
 
-		// Load existing jobs
 		if err := store.Load(); err != nil {
 			log.Printf("⚠️  No existing storage for %s, creating new", category)
 		}
 		log.Printf("   Currently tracking: %d %s jobs", store.GetJobCount(), category)
 
-		// Scrape jobs
 		scrapedJobs, err := s.ScrapeJobs()
 		if err != nil {
 			log.Printf(" ❌ Failed to scrape %s jobs: %v", category, err)
 			continue
 		}
 
-		// Find new jobs
 		newJobs := store.GetNewJobs(scrapedJobs)
 
 		log.Printf("   Found %d total, %d new %s jobs", len(scrapedJobs), len(newJobs), category)
 
-		// Send LINE notification if there are new jobs
 		if lineBot != nil && len(newJobs) > 0 {
 			log.Printf("\n📱 Sending %s notifications to LINE...", category)
 			if err := lineBot.SendMultipleJobsAlert(newJobs); err != nil {
@@ -200,7 +180,6 @@ func runScraper() {
 			}
 		}
 
-		// Save new jobs
 		if len(newJobs) > 0 {
 			store.AddJobs(newJobs)
 			if err := store.Save(); err != nil {

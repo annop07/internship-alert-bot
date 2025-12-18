@@ -39,8 +39,6 @@ func (l *LineBotNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 		return nil
 	}
 
-	// LINE limits Carousel to 12 bubbles (previously 10, but 12 is safe)
-	// We'll batch them in groups of 10
 	batchSize := 10
 	for i := 0; i < len(jobs); i += batchSize {
 		end := i + batchSize
@@ -68,11 +66,10 @@ func (l *LineBotNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 		}
 	}
 
-	log.Printf("📢 Broadcasted %d jobs to all users!", len(jobs))
+	log.Printf("Broadcasted %d jobs to all users!", len(jobs))
 	return nil
 }
 
-// SendSummary sends a text summary
 func (l *LineBotNotifier) SendSummary(totalJobs, newJobs int) error {
 	var message string
 	if newJobs > 0 {
@@ -85,7 +82,6 @@ func (l *LineBotNotifier) SendSummary(totalJobs, newJobs int) error {
 	return err
 }
 
-// TestConnection sends a test message
 func (l *LineBotNotifier) TestConnection() error {
 	log.Println("📱 Testing LINE Bot...")
 	_, err := l.client.PushMessage(l.userID, linebot.NewTextMessage("✅ Internship Alert Bot (Messaging API) is online!")).Do()
@@ -95,12 +91,10 @@ func (l *LineBotNotifier) TestConnection() error {
 	return err
 }
 
-// createJobFlexMessage creates a Flex Bubble for a single job
 func (l *LineBotNotifier) createJobFlexMessage(job *models.Job) linebot.FlexContainer {
 	return l.createJobBubble(job)
 }
 
-// createJobBubble creates the Bubble container
 func (l *LineBotNotifier) createJobBubble(job *models.Job) *linebot.BubbleContainer {
 	return &linebot.BubbleContainer{
 		Type: linebot.FlexContainerTypeBubble,

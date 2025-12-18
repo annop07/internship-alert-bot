@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/annop07/internship-alert-bot/pkg/webhook"
-	"github.com/joho/godotenv"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 )
 
@@ -15,12 +14,6 @@ func main() {
 	fmt.Println("🤖 LINE Webhook Server")
 	fmt.Println("======================\n")
 
-	// Load .env
-	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️  .env file not found")
-	}
-
-	// Get LINE credentials
 	channelSecret := os.Getenv("LINE_CHANNEL_SECRET")
 	channelToken := os.Getenv("LINE_CHANNEL_TOKEN")
 
@@ -34,7 +27,6 @@ func main() {
 		log.Fatalf("❌ Failed to create webhook handler: %v", err)
 	}
 
-	// Create LINE bot for parsing requests
 	bot, err := linebot.New(channelSecret, channelToken)
 	if err != nil {
 		log.Fatalf("❌ Failed to create LINE bot: %v", err)
@@ -62,12 +54,6 @@ func main() {
 		w.WriteHeader(200)
 	})
 
-	// Health check endpoint
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "LINE Webhook Server is running!")
-	})
-
-	// Get port from environment (for deployment)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

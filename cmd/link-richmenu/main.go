@@ -27,7 +27,6 @@ func main() {
 	fmt.Println("🔧 LINE Rich Menu Manager")
 	fmt.Println("=========================\n")
 
-	// List all Rich Menus
 	richMenus, err := listRichMenus(channelToken)
 	if err != nil {
 		log.Fatalf("❌ Failed to list Rich Menus: %v", err)
@@ -54,7 +53,6 @@ func main() {
 	if err := setDefaultRichMenu(channelToken, targetMenuID); err != nil {
 		log.Printf("⚠️  Failed to set default: %v", err)
 
-		// Fallback: try to link to specific user
 		if userID != "" {
 			fmt.Printf("📱 Trying to link to user: %s\n", userID)
 			if err := linkRichMenuToUser(channelToken, userID, targetMenuID); err != nil {

@@ -37,7 +37,6 @@ func main() {
 		log.Fatalf("❌ Failed to create Discord session: %v", err)
 	}
 
-	// Register handlers
 	s.AddHandler(ready)
 	s.AddHandler(interactionCreate)
 
@@ -47,14 +46,12 @@ func main() {
 	}
 	defer s.Close()
 
-	// Register slash commands
 	registerCommands()
 
 	fmt.Println("🤖 Discord Bot is running!")
 	fmt.Println("   Commands: /backend, /frontend, /fullstack, /stats")
 	fmt.Println("   Press Ctrl+C to stop")
 
-	// Wait for interrupt signal
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc

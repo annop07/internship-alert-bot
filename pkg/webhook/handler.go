@@ -48,11 +48,9 @@ func (h *Handler) HandleEvents(events []*linebot.Event) error {
 	return nil
 }
 
-// handlePostback handles pagination postback events
 func (h *Handler) handlePostback(replyToken, data, userID string) error {
 	log.Printf("Received postback: %s from user: %s", data, userID)
 
-	// Parse postback data: "category=backend&page=2"
 	parts := strings.Split(data, "&")
 	params := make(map[string]string)
 	for _, part := range parts {
@@ -87,7 +85,6 @@ func (h *Handler) handleTextMessage(replyToken, text, userID string) error {
 	case strings.Contains(text, "Fullstack"):
 		category = "fullstack"
 	default:
-		// Not a Rich Menu button, ignore
 		return nil
 	}
 
@@ -107,8 +104,7 @@ func (h *Handler) sendJobsPage(replyToken, category string, page int) error {
 		return h.replyError(replyToken, "ขออภัยครับ ไม่สามารถดึงข้อมูลงานได้ในขณะนี้")
 	}
 
-	// Get all jobs
-	allJobs := store.GetRecentJobs(100) // Get up to 100 jobs
+	allJobs := store.GetRecentJobs(100)
 	totalJobs := len(allJobs)
 
 	if totalJobs == 0 {
@@ -147,9 +143,7 @@ func getCategoryEmoji(category string) string {
 	}
 }
 
-// sendJobsFlexMessage sends jobs as LINE Flex Messages with pagination
 func (h *Handler) sendJobsFlexMessage(replyToken string, jobs []*models.Job, category, emoji string, page, totalJobs int, hasMore bool) error {
-	// Create bubbles for each job
 	var bubbles []*linebot.BubbleContainer
 
 	for _, job := range jobs {
@@ -157,19 +151,16 @@ func (h *Handler) sendJobsFlexMessage(replyToken string, jobs []*models.Job, cat
 		bubbles = append(bubbles, bubble)
 	}
 
-	// Add "Next Page" bubble if there are more jobs
 	if hasMore {
 		nextPageBubble := h.createNextPageBubble(category, page+1, totalJobs)
 		bubbles = append(bubbles, nextPageBubble)
 	}
 
-	// Create carousel
 	carousel := &linebot.CarouselContainer{
 		Type:     linebot.FlexContainerTypeCarousel,
 		Contents: bubbles,
 	}
 
-	// Create header message
 	startNum := (page-1)*jobsPerPage + 1
 	endNum := startNum + len(jobs) - 1
 	headerText := fmt.Sprintf("%s %s Internships\n📄 หน้า %d | แสดง %d-%d จาก %d ตำแหน่ง",

@@ -28,7 +28,6 @@ type Scraper struct {
 
 // NewScraper creates a new Scraper instance for a specific job category
 func NewScraper(category string) *Scraper {
-	// Build search URL based on category
 	var searchKeyword string
 	switch category {
 	case "backend":
@@ -56,18 +55,15 @@ func NewScraper(category string) *Scraper {
 func (s *Scraper) ScrapeJobs() ([]*models.Job, error) {
 	log.Println("🔍 Starting to scrape jobs from JobsDB...")
 
-	// Fetch HTML with retry logic
 	doc, err := s.fetchHTMLWithRetry(s.baseURL, maxRetries)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch jobs after %d retries: %w", maxRetries, err)
 	}
 
-	// Validate HTML structure
 	if err := s.validateHTML(doc); err != nil {
 		log.Printf("⚠️  Warning: %v", err)
 	}
 
-	// Extract jobs
 	jobs := s.extractJobs(doc)
 	log.Printf("✅ Successfully extracted %d jobs\n", len(jobs))
 
@@ -79,26 +75,21 @@ func (s *Scraper) fetchHTMLWithRetry(url string, maxRetries int) (*goquery.Docum
 	var lastErr error
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		// Create request
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
 
-		// Set headers to mimic browser
 		s.setHeaders(req)
 
-		// Rate limiting - delay between requests (except first attempt)
 		if attempt > 1 {
 			delay := time.Duration(math.Pow(2, float64(attempt-1))) * retryDelay
 			log.Printf("⏳ Waiting %v before retry %d/%d...", delay, attempt, maxRetries)
 			time.Sleep(delay)
 		} else if attempt == 1 {
-			// Small delay even on first request to be polite
 			time.Sleep(requestDelay)
 		}
 
-		// Send request
 		resp, err := s.client.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt, maxRetries, err)
@@ -114,7 +105,6 @@ func (s *Scraper) fetchHTMLWithRetry(url string, maxRetries int) (*goquery.Docum
 			continue
 		}
 
-		// Parse HTML
 		doc, err := goquery.NewDocumentFromReader(resp.Body)
 		resp.Body.Close()
 
@@ -139,15 +129,12 @@ func (s *Scraper) setHeaders(req *http.Request) {
 	req.Header.Set("Referer", "https://www.google.com/")
 }
 
-// validateHTML checks if expected HTML structure exists
 func (s *Scraper) validateHTML(doc *goquery.Document) error {
-	// Check if job cards exist
 	jobCards := doc.Find("article[data-automation='normalJob']")
 	if jobCards.Length() == 0 {
 		return fmt.Errorf("HTML structure changed: no job cards found with selector 'article[data-automation=normalJob]'")
 	}
 
-	// Check if required selectors exist in first job card
 	firstCard := jobCards.First()
 	if firstCard.Find("a[data-automation='jobTitle']").Length() == 0 {
 		return fmt.Errorf("HTML structure changed: jobTitle selector not found")
@@ -159,31 +146,18 @@ func (s *Scraper) validateHTML(doc *goquery.Document) error {
 	return nil
 }
 
-// extractJobs parses job listings from HTML document
 func (s *Scraper) extractJobs(doc *goquery.Document) []*models.Job {
 	var jobs []*models.Job
 
-	// Find all job cards using the correct selector
 	doc.Find("article[data-automation='normalJob']").Each(func(i int, selection *goquery.Selection) {
-
-		// Extract Job ID
 		jobID, _ := selection.Attr("data-job-id")
-
-		// Extract Title
 		title := strings.TrimSpace(selection.Find("a[data-automation='jobTitle']").Text())
-
-		// Extract Company
 		company := strings.TrimSpace(selection.Find("a[data-automation='jobCompany']").Text())
-
-		// Extract Location
 		location := strings.TrimSpace(selection.Find("a[data-automation='jobLocation']").Text())
 
-		// Extract URL
 		urlPath, exists := selection.Find("a[data-automation='jobTitle']").Attr("href")
 		url := ""
 		if exists && urlPath != "" {
-			// Clean URL - remove query parameters for cleaner link
-			// Example: /th/job/88662455?type=standard... → /th/job/88662455
 			if strings.Contains(urlPath, "?") {
 				urlPath = strings.Split(urlPath, "?")[0]
 			}
@@ -195,9 +169,7 @@ func (s *Scraper) extractJobs(doc *goquery.Document) []*models.Job {
 			}
 		}
 
-		// Extract Posted Date
 		postedDate := strings.TrimSpace(selection.Find("span[data-automation='jobListingDate']").Text())
-		// Fix duplication issue (e.g. "30d+ ago30d+ ago")
 		if len(postedDate) > 0 && len(postedDate)%2 == 0 {
 			half := len(postedDate) / 2
 			firstHalf := postedDate[:half]
@@ -207,19 +179,16 @@ func (s *Scraper) extractJobs(doc *goquery.Document) []*models.Job {
 			}
 		}
 
-		// Extract Description (optional)
 		description := strings.TrimSpace(selection.Find("span[data-automation='jobShortDescription']").Text())
 
-		// Validate minimum required data
 		if title != "" && company != "" && url != "" {
 			job := models.NewJob(title, company, location, url, postedDate)
 			job.ID = jobID
 			job.Description = description
-			job.Category = s.category // Set category from scraper
+			job.Category = s.category
 
 			jobs = append(jobs, job)
 
-			// Debug log for first few jobs
 			if i < 3 {
 				log.Printf("   [%d] %s at %s", i+1, title, company)
 			}
@@ -232,11 +201,10 @@ func (s *Scraper) extractJobs(doc *goquery.Document) []*models.Job {
 	return jobs
 }
 
-// TestConnection checks if the scraper can reach JobsDB with retry
 func (s *Scraper) TestConnection() error {
 	log.Println("🔗 Testing connection to JobsDB...")
 
-	_, err := s.fetchHTMLWithRetry(s.baseURL, 2) // Use 2 retries for test
+	_, err := s.fetchHTMLWithRetry(s.baseURL, 2)
 	if err != nil {
 		return fmt.Errorf("connection test failed: %w", err)
 	}

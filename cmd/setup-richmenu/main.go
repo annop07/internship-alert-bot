@@ -64,7 +64,6 @@ func main() {
 	}
 	fmt.Printf("✅ Rich Menu created: %s\n\n", richMenuID)
 
-	// Step 2: Instructions for uploading image
 	fmt.Println("📸 Next Steps:")
 	fmt.Println("1. Create a Rich Menu image (2500x1686 pixels)")
 	fmt.Println("   - 3 sections: Backend (left), Frontend (middle), Fullstack (right)")
@@ -118,7 +117,6 @@ func createRichMenu(channelToken string) (string, error) {
 		return "", err
 	}
 
-	// Create HTTP request
 	url := "https://api.line.me/v2/bot/richmenu"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
