@@ -1,59 +1,56 @@
-# Internship Alert Bot 🤖
+# Internship Alert Bot
 
-A Go-based web scraper designed to fetch internship job listings from JobsDB. Currently configured to track "Backend Internship" positions.
+## Important
+This project is for educational and personal use, focusing on backend system design, automation, and bot integration.
+The scraper only extracts publicly available job metadata and does not bypass authentication or paid features.
 
-## Features
-- **Basic Scraping**: Fetches job details including Title, Company, Location, Posted Date, and URL.
-- **Bot Protection Bypass**: Includes browser header simulation to avoid 403 Forbidden errors.
-- **JSON Output**: Automatically saves results to `jobs_output.json` for further processing.
-- **Console Summary**: Displays a clean summary of found jobs and top hiring companies in the terminal.
+Internship Alert Bot is an automated job alert system that monitors internship openings from JobsDB.
+It supports Backend, Frontend, and Fullstack internship categories with intelligent duplicate detection.
+The system delivers real-time notifications via LINE (Rich Menu & Flex Messages) and Discord (Slash Commands & Embeds).
+A Go-based web scraper handles HTML parsing, retry logic, and error recovery.
+GitHub Actions automate scheduled scraping every 30 minutes without manual operation.
+The project focuses on reliability, clean architecture, and scalable bot-based user experience.
 
-## Prerequisites
-- Go 1.25 or higher
+## Screenshots
 
-## Installation
+### 🤖 LINE Bot Setup
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/annop07/internship-alert-bot.git
-   cd internship-alert-bot
-   ```
+#### 1. Bot Profile
+![LINE Bot Profile](alert-bot-photo/1.bot.png)
 
-2. Install dependencies:
-   ```bash
-   go mod tidy
-   ```
 
-## Usage
+#### 2. Add Bot via QR Code
+![QR Code](alert-bot-photo/2.qrcode.png)
 
-Run the scraper using the following command:
 
-```bash
-go run cmd/scraper/main.go
-```
+#### 3. First Time Setup
+![Add Bot](alert-bot-photo/3.add-bot.png)
 
-The program will:
-1. Test connection to JobsDB.
-2. Scrape the first page of results.
-3. Display the results in the terminal.
-4. Save the detailed data to `jobs_output.json`.
 
-## Roadmap (Phase A)
-- [ ] Keyword filtering
-- [ ] Multi-page scraping support (Page 2, 3, ...)
-- [ ] Export to CSV
-- [ ] Extract additional details (Salary, Requirements)
+---
 
-## Project Structure
-```
-├── cmd/
-│   └── scraper/       # Main entry point (main.go)
-├── pkg/
-│   ├── models/        # Data structures (Job struct)
-│   └── scraper/       # Core scraping logic
-├── jobs_output.json   # Generated output file
-└── todo-list.md       # Project roadmap
-```
+### 📱 Rich Menu & Navigation
 
-## Disclaimer
-This project is for educational purposes only. Please respect the website's terms of service and usage policies.
+#### 4. Rich Menu Interface
+![Rich Menu](alert-bot-photo/4.rich-menu.png)
+
+
+#### 5. Category Selection
+![Rich Menu Click](alert-bot-photo/5.rich-menu-click.png)
+
+
+
+
+#### 6. New Job Alert (Single)
+![New Job Alert](alert-bot-photo/6.new-job-alert.png)
+
+
+#### 7. Multiple Job Alerts
+![Multiple Jobs Notification](alert-bot-photo/7.new-jobs-noti.png)
+
+
+
+
+
+
+

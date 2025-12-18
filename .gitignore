@@ -1,2 +1,4 @@
-# .env
-# formatJobDB.html
+.env
+*.exe
+logs/
+formatJobDB.html
