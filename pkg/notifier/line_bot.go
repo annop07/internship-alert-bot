@@ -26,14 +26,14 @@ func NewLineBotNotifier(channelSecret, channelToken, userID string) (*LineBotNot
 	}, nil
 }
 
-// SendJobAlert sends a notification for a single job
+// SendJobAlert sends a notification for a single job to ALL users
 func (l *LineBotNotifier) SendJobAlert(job *models.Job) error {
 	flexContainer := l.createJobFlexMessage(job)
-	_, err := l.client.PushMessage(l.userID, linebot.NewFlexMessage("New Internship Alert!", flexContainer)).Do()
+	_, err := l.client.BroadcastMessage(linebot.NewFlexMessage("New Internship Alert!", flexContainer)).Do()
 	return err
 }
 
-// SendMultipleJobsAlert sends a notification for multiple jobs using Carousel
+// SendMultipleJobsAlert sends a notification for multiple jobs using Carousel to ALL users
 func (l *LineBotNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 	if len(jobs) == 0 {
 		return nil
@@ -60,14 +60,15 @@ func (l *LineBotNotifier) SendMultipleJobsAlert(jobs []*models.Job) error {
 			Contents: bubbles,
 		}
 
-		altText := fmt.Sprintf("Found %d new internships!", len(batch))
-		_, err := l.client.PushMessage(l.userID, linebot.NewFlexMessage(altText, carousel)).Do()
+		altText := fmt.Sprintf("📢 พบ %d ตำแหน่งงานใหม่!", len(batch))
+		_, err := l.client.BroadcastMessage(linebot.NewFlexMessage(altText, carousel)).Do()
 		if err != nil {
-			log.Printf("⚠️ Failed to send LINE batch: %v", err)
+			log.Printf("⚠️ Failed to broadcast LINE message: %v", err)
 			return err
 		}
 	}
 
+	log.Printf("📢 Broadcasted %d jobs to all users!", len(jobs))
 	return nil
 }
 
